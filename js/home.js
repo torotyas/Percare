@@ -4,7 +4,7 @@
    {petId,itemId,name,at,note}. Undo = soft delete. No medical advice anywhere. */
 (function(){
 const PC=window.PC, {DB,S,$,esc,sp,ava,hdr,empty,openSheet,closeSheet,save,remove,petBar,bindPetBar,fmtDT,dstr,CARE_DEFAULTS}=PC;
-const APP_VERSION='0.2.0';
+const APP_VERSION='0.3.0';
 const DAILY=/刷牙|散步|餵食|噴水/;
 const D=864e5;
 const items=p=>p.careItems||(CARE_DEFAULTS[p.species]||CARE_DEFAULTS.other).map((n,i)=>({id:'d'+i,name:n,every:DAILY.test(n)?1:0,daily:DAILY.test(n)}));
@@ -84,7 +84,8 @@ async function render(){
   $('hm').innerHTML=`<div class="care-grid">${its.map(btn).join('')}</div>
    <div class="row care-links"><button class="btn sm ghost" id="hHist">🕘 紀錄</button><button class="btn sm ghost" id="hItems">✏️ 項目</button>${S.pets.length>1?'<button class="btn sm ghost" id="hMulti">🐾 多隻一起</button>':''}</div>
    <div class="srcs" style="text-align:center;margin:2px 0 10px">點一下記錄・長按可加備註</div>
-   <div class="card tap" id="hRem">${up?(()=>{ const [cls,txt]=PC.whenTxt(up); return `<div class="rem"><div class="t"><div class="meta">下一個提醒</div><b>${esc(PC.remTitle(up))}</b></div><span class="when ${cls}">${txt}</span></div>`; })():'<div class="meta">沒有提醒・點這裡新增</div>'}</div>`;
+   <div class="card tap" id="hRem">${up?(()=>{ const [cls,txt]=PC.whenTxt(up); return `<div class="rem"><div class="t"><div class="meta">下一個提醒</div><b>${esc(PC.remTitle(up))}</b></div><span class="when ${cls}">${txt}</span></div>`; })():'<div class="meta">沒有提醒・點這裡新增</div>'}</div>${PC.AI?PC.AI.toolsHtml():''}`;
+  if(PC.AI) PC.AI.bind($('hm'));
   const grid=v.querySelector('.care-grid');
   grid.querySelectorAll('[data-it]').forEach(b=>{ const it=its.find(x=>x.id===b.dataset.it); let t, long=false;
     const start=()=>{ long=false; t=setTimeout(()=>{ long=true; noteSheet(p,it); },550); }, cancel=()=>clearTimeout(t);

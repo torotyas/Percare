@@ -151,3 +151,15 @@ footer b{color:#c0563b}
 .iab{display:flex;gap:8px;align-items:center}
 .ecard{width:100%;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.1)}
 .toast .btn{white-space:nowrap;flex-shrink:0}
+/* v0.3.0 小幫手 (© 2026 凱波工作室 Kaibo Studio) */
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tools button{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 10px;text-align:left;font-size:15px;font-weight:700;color:inherit;display:flex;flex-direction:column;gap:2px}
+.tools button i{font-style:normal;font-size:22px}.tools button small{font-weight:400;font-size:11.5px;color:var(--sub)}
+.tools button:active{transform:scale(.97)}
+.mic{display:flex;flex-direction:column;align-items:center;gap:4px;margin:12px auto;width:120px;height:120px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:40px;justify-content:center}
+.mic small{font-size:11px;padding:0 8px;text-align:center}.mic.on{background:#e5484d;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 14px rgba(229,72,77,.15)}}
+.ai-prog{padding:24px 4px}.ai-prog .bar{height:8px;border-radius:8px;background:var(--line);overflow:hidden;margin-bottom:10px}.ai-prog .bar i{display:block;height:100%;width:3%;background:var(--pri);transition:width .3s}
+details.raw{margin:10px 0;font-size:13px;color:var(--sub)}details.raw pre{white-space:pre-wrap;background:#fff;border-radius:10px;padding:8px;max-height:160px;overflow:auto}
+.print-only{display:none}
+@media print{body.printing>*:not(.sheet){display:none!important}body.printing .sheet{position:static;background:none}body.printing .sheet .box{position:static;transform:none;max-height:none;overflow:visible;max-width:none}body.printing .no-print,body.printing .grab,body.printing .shead{display:none!important}body.printing .print-only{display:block}}

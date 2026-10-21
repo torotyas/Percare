@@ -25,10 +25,12 @@ function summaryData(p){
   sec.push({t:'💉 疫苗（各項最近一次）',lines:Object.values(vacc).length?Object.values(vacc).map(r=>`${r.title}・${fmtD(r.date)}${r.clinic?'・'+r.clinic:''}`):['無紀錄']});
   const vis=recs('visit').filter(r=>(r.date||'')>=sinceS); sec.push({t:'🏥 近 3 個月就醫',lines:vis.length?vis.map(r=>`${fmtD(r.date)}・${r.clinic||''}・${r.title}${r.vetSays?'｜獸醫說明：'+r.vetSays:''}`):['無紀錄']});
   const tests=recs('test').filter(r=>(r.date||'')>=sinceS); sec.push({t:'🧪 近 3 個月檢驗',lines:tests.length?tests.map(r=>`${fmtD(r.date)}・${r.title}${r.result?'：'+r.result:''}`):['無紀錄']});
-  if(wM){ const vs=w90.map(x=>x.v); sec.push({t:`📈 近 3 個月體重（${wM.unit}）`,lines:vs.length?[`${vs.length} 筆紀錄；第一筆 ${vs[0]}、最近一筆 ${vs[vs.length-1]}；範圍 ${Math.min(...vs)}–${Math.max(...vs)}`]:['無紀錄'],chart:w90.length>=2?{pts:w90,unit:wM.unit}:null}); }
+  if(wM){ const vs=w90.map(x=>Math.round(x.v*100)/100); sec.push({t:`📈 近 3 個月體重（${wM.unit}）`,lines:vs.length?[`${vs.length} 筆紀錄；第一筆 ${vs[0]}、最近一筆 ${vs[vs.length-1]}；範圍 ${Math.min(...vs)}–${Math.max(...vs)}`]:['無紀錄'],chart:w90.length>=2?{pts:w90,unit:wM.unit}:null}); }
   const obs=[]; T.checkin.filter(m=>m.t!=='num').forEach(m=>{ const cnt={}; ck.forEach(c=>{ const v=c.metrics&&c.metrics[m.k]; if(v==null||v==='') return; const l=m.t==='bool'?(v?'有':'沒有'):m.t==='ord'?((m.opts.find(o=>o[0]===+v)||[])[1]||v):v; cnt[l]=(cnt[l]||0)+1; }); if(Object.keys(cnt).length) obs.push(`${m.n}：${Object.entries(cnt).map(([k,n])=>`${k} ${n}`).join('、')}`); });
   T.checkin.filter(m=>m.t==='num'&&m.k!=='weight').forEach(m=>{ const vs=ck.map(c=>c.metrics&&c.metrics[m.k]).filter(v=>v!=null&&v!=='').map(Number); if(vs.length) obs.push(`${m.n}：${vs.length} 筆，範圍 ${Math.min(...vs)}–${Math.max(...vs)}${m.unit?' '+m.unit:''}`); });
   sec.push({t:`📝 近 3 個月每日紀錄（共 ${ck.length} 筆）`,lines:obs.length?obs:['無紀錄']});
+  if(PC.careLogs){ const cl=PC.careLogs(p.id).filter(l=>l.at>=since.toISOString()); const g={}; cl.forEach(l=>{ (g[l.name]=g[l.name]||[]).push(l); });
+    sec.push({t:`✅ 近 3 個月照護打卡（共 ${cl.length} 次）`,lines:cl.length?Object.entries(g).map(([n,L])=>`${n.replace(/^[^\p{L}\p{N}]+/u,'')}：${L.length} 次，最近 ${fmtDT(L[0].at)}${L.filter(x=>x.note).length?'（備註：'+L.filter(x=>x.note).slice(0,3).map(x=>x.note).join('；')+'）':''}`):['無紀錄']}); }
   const notes=ck.filter(c=>c.note).reverse().slice(0,15).map(c=>`${fmtDT(c.at)}　${c.note}`);
   sec.push({t:'🗒️ 飼主觀察到的症狀／備註',lines:notes.length?notes:['無']});
   return {p,sec,generated:new Date(),since};

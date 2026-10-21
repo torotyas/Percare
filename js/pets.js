@@ -9,7 +9,7 @@ const KINDS={
  condition:{n:'病史／長期狀況',i:'📋',fields:[['title','疾病或狀況 *','text',1],['date','診斷日期','date'],['status','目前狀態','select',0,['進行中','長期控制','已痊癒']],['notes','備註','area']]},
  vaccine:{n:'疫苗',i:'💉',fields:[['title','疫苗名稱 *','text',1],['date','施打日期 *','date',1],['nextDate','下次施打（依獸醫建議）','date'],['clinic','醫院','text'],['notes','備註','area']]},
  medication:{n:'用藥',i:'💊',fields:[['title','藥名 *','text',1],['dose','劑量','text'],['freq','頻率（依處方）','text'],['date','開始日期','date'],['endDate','結束日期','date'],['purpose','用途','text'],['prescribedBy','開立醫院／獸醫','text'],['notes','備註','area']]},
- visit:{n:'就醫紀錄',i:'🏥',fields:[['date','就診日期 *','date',1],['clinic','醫院','text'],['title','就診原因／症狀 *','text',1],['vetSays','獸醫說明（照獸醫原話記錄）','area'],['followUp','回診日期','date'],['notes','備註','area']]},
+ visit:{n:'就醫紀錄',i:'🏥',fields:[['date','就診日期 *','date',1],['clinic','醫院','text'],['title','就診原因／症狀 *','text',1],['vetSays','獸醫說明（照獸醫原話記錄）','area'],['followUp','回診日期','date'],['amount','費用（元）','text'],['notes','備註','area']]},
  test:{n:'檢驗',i:'🧪',fields:[['date','檢驗日期 *','date',1],['title','檢驗項目 *','text',1],['result','結果摘要（照報告記錄）','area'],['notes','備註','area']]}
 };
 const ORDER=['allergy','medication','condition','vaccine','visit','test'];
@@ -42,7 +42,7 @@ function recLine(r){ const k=KINDS[r.kind]; let sub=[];
   if(r.kind==='condition') sub=[r.status,r.date&&'診斷 '+fmtD(r.date)];
   if(r.kind==='vaccine') sub=[fmtD(r.date),r.nextDate&&'下次 '+fmtD(r.nextDate),r.clinic];
   if(r.kind==='medication') sub=[r.dose,r.freq,r.date&&fmtD(r.date)+' 起',r.endDate&&'到 '+fmtD(r.endDate)];
-  if(r.kind==='visit') sub=[fmtD(r.date),r.clinic];
+  if(r.kind==='visit') sub=[fmtD(r.date),r.clinic,r.amount&&'NT$'+r.amount,r.followUp&&'回診 '+fmtD(r.followUp)];
   if(r.kind==='test') sub=[fmtD(r.date),r.result];
   let extra='';
   if(r.kind==='medication'&&medActive(r)){ const log=medLog(r.id); const last=log[0];
