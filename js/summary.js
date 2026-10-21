@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* P3 vet-visit summary (last 3 months): shown on-screen in 就醫模式 and exportable as PDF.
    PDF pages are drawn on canvas (system CJK fonts, so no font embedding) and packed with jsPDF (bundled locally).
    Owner-recorded data only; no interpretation or diagnosis. */

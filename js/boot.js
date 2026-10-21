@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 (async function(){
 const PC=window.PC;
 document.getElementById('tabs').onclick=e=>{ const b=e.target.closest('[data-t]'); if(b) PC.go(b.dataset.t); };

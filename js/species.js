@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* Species templates (v1 lives in code; v2 → `species_templates` table with a version number).
    profile: species-specific profile fields stored in pet.attributes (JSON).
    checkin: daily/weekly quick check-in metrics stored in checkin.metrics (JSON).

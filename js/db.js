@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* Local-first data layer on IndexedDB.
    Every record carries sync-ready fields: id (uuid), createdAt, updatedAt, createdBy, deletedAt (soft delete), so a
    later Supabase sync can upsert by id and resolve conflicts with updatedAt. Files (photos/documents) are Blobs in the

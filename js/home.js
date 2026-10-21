@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* 首頁 (minimal): current pet's one-tap care check-ins, next reminder, big SOS button. Settings sheet: backup/restore, feedback.
    Care items live on pet.careItems [{id,name,every(days, 0 = no interval),daily}]; taps go to the `carelogs` store
    {petId,itemId,name,at,note}. Undo = soft delete. No medical advice anywhere. */
@@ -62,7 +63,8 @@ function settingsSheet(){
    <button class="big-btn teal" id="bkExp">💾 <span>備份資料<small>下載一個 JSON 檔（不含照片與附件）</small></span></button>
    <label class="big-btn teal" style="cursor:pointer">📥 <span>從備份還原<small>合併匯入，不會刪除目前資料</small></span><input type="file" id="bkImp" accept="application/json,.json" hidden></label>
    <a class="big-btn orange" id="fb" href="#">✉️ <span>意見回饋<small>寄信給開發者</small></span></a>
-   <div class="srcs" style="text-align:center">毛孩健康護照 v${APP_VERSION}・本 app 不提供醫療建議，有疑慮請聯絡獸醫。</div>`, box=>{
+   <div class="srcs" style="text-align:center">毛孩健康護照 v${APP_VERSION}・本 app 不提供醫療建議，有疑慮請聯絡獸醫。</div>
+   <div class="srcs" style="text-align:center">© 2026 凱波工作室 Kaibo Studio</div>`, box=>{
     $('bkExp').onclick=async()=>{ const d=await DB.exportAll(); window.Platform.Share.download(new Blob([JSON.stringify(d)],{type:'application/json'}),`毛孩護照備份-${PC.today()}.json`); };
     $('bkImp').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; try{ const n=await DB.importAll(JSON.parse(await file.text())); await PC.load(); closeSheet(); render(); toast(`已還原 ${n} 筆資料`); }catch(err){ alert('還原失敗：'+err.message); } };
     $('fb').href='mailto:kai.pobi666@gmail.com?subject='+encodeURIComponent('PetCare 意見回饋')+'&body='+encodeURIComponent(`\n\n\n---\nApp 版本：${APP_VERSION}\n裝置：${navigator.userAgent}`); }); }

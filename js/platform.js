@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* Platform adapter: everything that differs between the browser/PWA and a future
    Capacitor build lives here, so the rest of the app never touches native APIs directly.
    - Store: localStorage today; could be swapped for @capacitor/preferences or a backend sync.

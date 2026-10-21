@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* Shared helpers, in-memory state (loaded from IndexedDB at boot), tabs and bottom sheet. */
 (function(){
 const PC=window.PC, {DB,SPECIES}=PC;

@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* Emergency page: quick links to find a 24h / exotic vet near the user (opens Google Maps search, which uses the
    phone's location), the owner's own vet contacts, No medical advice. */
 (function(){

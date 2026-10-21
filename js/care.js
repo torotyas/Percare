@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* Care reminders (reused from pet-friendly-app: interval math, overdue grouping, .ics export, notifier).
    Species "examples" are suggestions only, not predictions; intervals must follow the vet's advice.
    Completing a reminder writes an append-only action (who/when). */

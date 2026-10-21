@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* P2 quick check-ins by species + trend charts.
    No anomaly alerts or health judgments: charts show recorded values only. */
 (function(){

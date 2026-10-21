@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* 寵物護照 (pet passport), the central screen.
    - 走失模式 / public info (default for the collar tag): ONLY the fields the owner ticks. Full medical history is never
      included by default.

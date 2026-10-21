@@ -1,3 +1,4 @@
+<!-- © 2026 凱波工作室 Kaibo Studio -->
 /* P1 health profile: multi-pet, multi-species, species-specific fields, medical records with attachments,
    and an append-only medication log (who gave which med when) to help avoid double dosing. */
 (function(){
