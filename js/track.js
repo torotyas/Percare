@@ -1,25 +1,10 @@
 /* P2 quick check-ins by species + trend charts.
-   No fixed-% anomaly alerts. At most a neutral "changed vs this pet's own recent baseline" note, shown only when
-   there is enough history, the change exceeds the measurement resolution AND the pet's own normal variation. */
+   No anomaly alerts or health judgments: charts show recorded values only. */
 (function(){
 const PC=window.PC, {S,$,esc,fmtD,fmtDT,sp,hdr,empty,openSheet,closeSheet,save,remove,petBar,bindPetBar,daysAgo}=PC;
 let range=30;
 const entries=petId=>S.checkins.filter(c=>c.petId===petId).sort((a,b)=>a.at.localeCompare(b.at));
 const median=a=>{ const s=[...a].sort((x,y)=>x-y), n=s.length; return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):NaN; };
-function baselineNote(p,m){
-  const pts=entries(p.id).filter(c=>c.metrics&&c.metrics[m.k]!=null&&c.metrics[m.k]!=='').map(c=>({t:new Date(c.at),v:+c.metrics[m.k]}));
-  const now=Date.now(), D=864e5;
-  const recent=pts.filter(x=>now-x.t<=7*D), base=pts.filter(x=>now-x.t>7*D&&now-x.t<=37*D);
-  if(recent.length<2||base.length<5) return '';
-  const span=(Math.max(...base.map(x=>+x.t))-Math.min(...base.map(x=>+x.t)))/D; if(span<14) return '';
-  const mb=median(base.map(x=>x.v)), mr=median(recent.map(x=>x.v));
-  const mad=median(base.map(x=>Math.abs(x.v-mb)))*1.4826;
-  const band=Math.max(m.err||0, 2*mad);
-  const diff=mr-mb; if(Math.abs(diff)<=band) return '';
-  const am=PC.ageMonths(p.birthday);
-  const fmt=v=>(Math.round(v*100)/100)+(m.unit?' '+m.unit:'');
-  return `<div class="note-neutral">ℹ️ 最近 7 天的${esc(m.n)}（中位數 ${fmt(mr)}）比${esc(p.name)}自己前 30 天的紀錄（中位數 ${fmt(mb)}）${diff>0?'高':'低'}，差距超過牠平常的起伏與測量誤差。<br>這只是和牠自己過去紀錄的比較，不是診斷；磅秤、測量時間、進食前後都會影響數值${am!=null&&am<12?'，幼年成長期的變化也與成年不同':''}。若變化持續或合併其他症狀，請諮詢獸醫。</div>`;
-}
 function chart(p,m){
   const from=daysAgo(range).toISOString();
   const pts=entries(p.id).filter(c=>c.at>=from&&c.metrics&&c.metrics[m.k]!=null&&c.metrics[m.k]!=='').map(c=>({t:new Date(c.at),v:+c.metrics[m.k]}));
@@ -37,6 +22,9 @@ function chart(p,m){
    <path d="${path}" fill="none" stroke="#2f9e8f" stroke-width="2.2" stroke-linejoin="round"/>
    ${pts.map(x=>`<circle cx="${X(+x.t)}" cy="${Y(x.v)}" r="3" fill="#2f9e8f"/>`).join('')}</svg>`;
 }
+function wChange(p,m){ const from=daysAgo(range).toISOString(); const pts=entries(p.id).filter(c=>c.at>=from&&c.metrics&&c.metrics.weight!=null&&c.metrics.weight!=='').map(c=>+c.metrics.weight);
+  if(pts.length<2) return ''; const a=pts[0], b=pts[pts.length-1], pc=a?((b-a)/a*100):0, r=v=>Math.round(v*100)/100;
+  return `<div class="meta wchg">期間變化：${r(a)} → ${r(b)} ${esc(m.unit)}（${pc>=0?'+':''}${r(pc)}%）</div>`; }
 function catSummary(p,m){
   const from=daysAgo(range).toISOString(); const list=entries(p.id).filter(c=>c.at>=from&&c.metrics&&c.metrics[m.k]!=null&&c.metrics[m.k]!=='');
   if(!list.length) return '<div class="meta">尚無紀錄</div>';
@@ -52,12 +40,12 @@ function render(){
   $('addCk').onclick=()=>ckForm(p);
   const M=sp(p).checkin, list=entries(p.id);
   const todayDone=list.some(c=>c.at.slice(0,10)===PC.today());
-  let h=`<div class="card"><div class="sec-h"><h3>${sp(p).i} ${esc(p.name)}</h3><div class="seg">${[30,90].map(d=>`<button data-r="${d}" class="${range===d?'on':''}">${d} 天</button>`).join('')}</div></div>
+  let h=`<div class="card"><div class="sec-h"><h3>${sp(p).i} ${esc(p.name)}</h3><div class="seg">${[[30,'1M'],[90,'3M'],[180,'6M'],[365,'1Y']].map(([d,l])=>`<button data-r="${d}" class="${range===d?'on':''}">${l}</button>`).join('')}</div></div>
     <div class="meta">${todayDone?'✅ 今天已打卡':'今天還沒打卡'}・共 ${list.length} 筆紀錄</div>${todayDone?'':'<button class="btn full" id="ck2" style="margin-top:10px">＋ 今日快速打卡</button>'}</div>`;
-  M.forEach(m=>{ h+=`<div class="card"><div class="sec-h"><h3>${esc(m.n)}${m.unit?`（${esc(m.unit)}）`:''}</h3></div>${m.t==='num'||m.t==='ord'?chart(p,m):catSummary(p,m)}${m.baseline?baselineNote(p,m):''}</div>`; });
+  M.forEach(m=>{ h+=`<div class="card"><div class="sec-h"><h3>${esc(m.n)}${m.unit?`（${esc(m.unit)}）`:''}</h3></div>${m.t==='num'||m.t==='ord'?chart(p,m):catSummary(p,m)}${m.k==='weight'?wChange(p,m):''}</div>`; });
   const recent=[...list].reverse().slice(0,10);
   h+=`<div class="card"><h3 style="font-size:15px;margin-bottom:4px">最近紀錄</h3>${recent.length?recent.map(c=>`<div class="list-item"><div class="grow"><b>${fmtDT(c.at)}</b><div class="meta">${M.map(m=>showVal(m,c.metrics[m.k])).filter(Boolean).map(esc).join('・')||'—'}</div>${c.note?`<div class="note">${esc(c.note)}</div>`:''}</div><button class="btn sm ghost" data-ck="${c.id}">✏️</button></div>`).join(''):'<div class="meta">尚無紀錄</div>'}</div>
-  <div class="srcs" style="text-align:center">圖表只呈現你記錄的數值，不做診斷。有疑慮請諮詢獸醫。</div>`;
+  <div class="srcs" style="text-align:center">圖表只呈現你記錄的數值。本 app 不提供醫療建議，有疑慮請聯絡獸醫。</div>`;
   $('tk').innerHTML=h;
   v.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{ range=+b.dataset.r; render(); });
   const c2=$('ck2'); if(c2) c2.onclick=()=>ckForm(p);

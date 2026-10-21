@@ -30,12 +30,13 @@ function render(){
   $('rl').innerHTML=(S.reminders.length?g.filter(x=>x[1].length).map(([t,l])=>`<div class="sec">${t}（${l.length}）</div>`+l.map(row).join('')).join(''):empty('📋','還沒有提醒。點右上角「＋ 新增」。'))
    +(done.length?`<div class="sec">✅ 最近完成</div><div class="card">${done.map(a=>`<div class="list-item"><div class="grow"><b>${esc(a.title)}</b><div class="meta">${PC.fmtDT(a.at)}・${a.by===DB.me?'我':'家人'}</div></div></div>`).join('')}</div>`:'');
   $('rl').onclick=async e=>{ const b=e.target.closest('button'); if(!b) return; const r=S.reminders.find(x=>x.id===(b.dataset.done||b.dataset.ics||b.dataset.redit)); if(!r) return;
-    if(b.dataset.done){ const a=await DB.logAction({kind:'reminder_done',petId:r.petId,refId:r.id,title:remLabel(r),dueDate:r.date}); S.actions.push(a);
-      if(r.every){ let nd=addInterval(r.date,+r.every,r.unit); while(daysTo(nd)<0) nd=addInterval(nd,+r.every,r.unit); await save('reminders',{...r,date:nd,lastNotified:null}); } else await remove('reminders',r.id);
-      syncNotifs(); render(); }
+    if(b.dataset.done){ await completeReminder(r); render(); }
     if(b.dataset.ics) exportIcs(r);
     if(b.dataset.redit) remForm(r.id); };
 }
+async function completeReminder(r,via){ const a=await DB.logAction({kind:'reminder_done',petId:r.petId,refId:r.id,title:remLabel(r),dueDate:r.date,via:via||''}); S.actions.push(a);
+  if(r.every){ let nd=addInterval(r.date,+r.every,r.unit); while(daysTo(nd)<=0) nd=addInterval(nd,+r.every,r.unit); await save('reminders',{...r,date:nd,lastNotified:null}); } else await remove('reminders',r.id);
+  syncNotifs(); return a; }
 function remForm(id){
   const p0=PC.pet(); const r=S.reminders.find(x=>x.id===id)||{petId:p0.id,type:'vaccine',date:today(),every:'',unit:'month'};
   const ex=pid=>{ const pp=PC.pet(pid); return sp(pp).reminderExamples; };
@@ -66,5 +67,5 @@ async function checkDue(){ if(Notifier.isNative()) return;
   for(const r of S.reminders){ if(daysTo(r.date)<=0&&r.lastNotified!==r.date){ const ok=await Notifier.show('🐾 照護提醒',remLabel(r)); if(ok){ r.lastNotified=r.date; await DB.put('reminders',r); } } } }
 const syncNotifs=()=>Notifier.sync(S.reminders,remLabel);
 PC.VIEWS.care=render;
-Object.assign(PC,{checkDue,syncNotifs,remLabel});
+Object.assign(PC,{checkDue,syncNotifs,remLabel,remTitle,completeReminder,whenTxt,RTYPES});
 })();

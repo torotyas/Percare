@@ -14,7 +14,7 @@ function summaryData(p){
   const basic=[['物種',[T.i+' '+T.n,p.breed].filter(Boolean).join('・')],['性別',p.sex&&p.sex!=='未知'?p.sex:''],['生日',p.birthday?fmtD(p.birthday)+'（'+age(p.birthday)+'）':''],['晶片',p.chip],
     ['最近體重',lastW?`${lastW.v} ${wM.unit}（${fmtD(PC.dstr(lastW.t))}）`:''],...T.profile.map(f=>[f.n,p.attributes&&p.attributes[f.k]?(f.t==='date'?fmtD(p.attributes[f.k]):p.attributes[f.k]):''])].filter(x=>x[1]);
   sec.push({t:'基本資料',kv:basic});
-  const al=recs('allergy'); sec.push({t:'⚠️ 過敏',lines:al.length?al.map(r=>[r.title,r.reaction,r.severity].filter(Boolean).join('・')):['無紀錄（不代表沒有過敏）'],alert:al.length>0});
+  const al=recs('allergy'); sec.push({t:'⚠️ 過敏',lines:al.length?al.map(r=>[r.title,r.reaction,r.severity].filter(Boolean).join('・')):['無紀錄（不代表沒有過敏）']});
   const meds=recs('medication'), act=meds.filter(PC.medActive);
   const medLines=act.map(r=>{ const log=PC.medLog(r.id).filter(a=>a.at>=since.toISOString()); return `${r.title}${r.dose?' '+r.dose:''}${r.freq?'・'+r.freq:''}${r.date?'・'+fmtD(r.date)+' 起':''}${log.length?`・近 3 個月記錄給藥 ${log.length} 次，最後 ${fmtDT(log[0].at)}`:''}`; });
   const stopped=meds.filter(r=>!PC.medActive(r)&&(r.endDate||'')>=sinceS).map(r=>`（已停）${r.title}・${fmtD(r.date)}–${fmtD(r.endDate)}`);
@@ -37,7 +37,7 @@ function svgChart(ch){ const W=320,H=110,L=30,R=6,T=8,B=18; const ts=ch.pts.map(
   return `<svg class="chart" viewBox="0 0 ${W} ${H}"><path d="${ch.pts.map((x,i)=>(i?'L':'M')+X(+x.t)+' '+Y(x.v)).join(' ')}" fill="none" stroke="#2f9e8f" stroke-width="2"/>${ch.pts.map(x=>`<circle cx="${X(+x.t)}" cy="${Y(x.v)}" r="2.5" fill="#2f9e8f"/>`).join('')}<text x="${L-3}" y="${Y(hi-pd)+3}" text-anchor="end">${Math.round((hi-pd)*100)/100}</text><text x="${L-3}" y="${Y(lo+pd)+3}" text-anchor="end">${Math.round((lo+pd)*100)/100}</text><text x="${L}" y="${H-4}">${fmtD(PC.dstr(new Date(t0)))}</text><text x="${W-R}" y="${H-4}" text-anchor="end">${fmtD(PC.dstr(new Date(t1)))}</text></svg>`; }
 function renderVetMode(p,el){ const d=summaryData(p);
   el.innerHTML=`<div class="info">🩺 給獸醫看的完整摘要（近 3 個月）。只在你的手機上顯示或匯出 PDF，不會放進項圈 QR。</div>
-   ${d.sec.map(s=>`<div class="card"${s.alert?' style="border:2px solid #ffc9c9"':''}><h3 style="font-size:15px;margin-bottom:6px">${esc(s.t)}</h3>${s.kv?`<dl class="kv" style="margin:0">${s.kv.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`:''}${(s.lines||[]).map(l=>`<div class="note" style="margin:3px 0">${esc(l)}</div>`).join('')}${s.chart?svgChart(s.chart):''}</div>`).join('')}
+   ${d.sec.map(s=>`<div class="card"><h3 style="font-size:15px;margin-bottom:6px">${esc(s.t)}</h3>${s.kv?`<dl class="kv" style="margin:0">${s.kv.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`:''}${(s.lines||[]).map(l=>`<div class="note" style="margin:3px 0">${esc(l)}</div>`).join('')}${s.chart?svgChart(s.chart):''}</div>`).join('')}
    <div class="row"><button class="btn full" id="pdfBtn">📄 匯出 PDF</button></div>
    <div class="srcs" style="text-align:center">以上為飼主自行記錄的資料，僅供獸醫參考，不是診斷。產生時間：${fmtDT(d.generated.toISOString())}</div>`;
   el.querySelector('#pdfBtn').onclick=async e=>{ e.target.disabled=true; e.target.textContent='產生中…'; try{ const b=await pdfBlob(p); await Share.download(b,`就醫摘要-${p.name}-${PC.today()}.pdf`); }catch(err){ alert('PDF 產生失敗：'+err.message); } e.target.disabled=false; e.target.textContent='📄 匯出 PDF'; };
@@ -53,7 +53,7 @@ async function pages(p){ const d=summaryData(p), W=1240, H=1754, M=90, out=[]; l
   x.fillStyle='#2f9e8f'; x.fillRect(0,0,W,150); x.fillStyle='#fff'; x.font=`900 54px ${FONT}`; x.fillText(`${p.name} 就醫摘要`,M,92); x.font=`400 24px ${FONT}`; x.fillText(`期間：${fmtD(PC.dstr(d.since))} – ${fmtD(PC.today())}　產生：${fmtDT(d.generated.toISOString())}`,M,132);
   if(photo){ const s=120, k=Math.max(s/photo.width,s/photo.height); x.save(); x.beginPath(); x.arc(W-M-60,75,60,0,7); x.clip(); x.drawImage(photo,W-M-120+(s-photo.width*k)/2,15+(s-photo.height*k)/2,photo.width*k,photo.height*k); x.restore(); }
   y=200;
-  for(const s of d.sec){ need(90); x.fillStyle=s.alert?'#c92a2a':'#174a43'; x.font=`700 32px ${FONT}`; x.fillText(s.t,M,y); y+=14; x.fillStyle='#dcebe7'; x.fillRect(M,y,W-2*M,3); y+=40;
+  for(const s of d.sec){ need(90); x.fillStyle='#174a43'; x.font=`700 32px ${FONT}`; x.fillText(s.t,M,y); y+=14; x.fillStyle='#dcebe7'; x.fillRect(M,y,W-2*M,3); y+=40;
     x.fillStyle='#2d3b38';
     if(s.kv) for(const [k,v] of s.kv){ const L=wrap(String(v),`400 26px ${FONT}`,W-2*M-200); need(L.length*38); x.font=`700 26px ${FONT}`; x.fillStyle='#6f817d'; x.fillText(k,M,y); x.fillStyle='#2d3b38'; x.font=`400 26px ${FONT}`; L.forEach(l=>{ x.fillText(l,M+200,y); y+=38; }); }
     for(const t of (s.lines||[])){ const L=wrap('• '+t,`400 26px ${FONT}`,W-2*M-20); need(L.length*38); x.font=`400 26px ${FONT}`; L.forEach((l,i)=>{ x.fillText(i?'  '+l:l,M+10,y); y+=38; }); }

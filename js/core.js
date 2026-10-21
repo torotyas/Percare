@@ -14,8 +14,8 @@ function age(b){ if(!b) return ''; const d=new Date(b), n=new Date(); let m=(n.g
 const ageMonths=b=>{ if(!b) return null; const d=new Date(b), n=new Date(); return (n.getFullYear()-d.getFullYear())*12+n.getMonth()-d.getMonth(); };
 const sp=p=>SPECIES[p&&p.species]||SPECIES.other;
 
-const S={pets:[],records:[],checkins:[],reminders:[],actions:[],cur:null,settings:{},urls:{}};
-async function load(){ for(const k of ['pets','records','checkins','reminders','actions']) S[k]=await DB.all(k); S.cur=await DB.meta('currentPet'); S.settings=(await DB.meta('settings'))||{};
+const S={pets:[],records:[],checkins:[],reminders:[],actions:[],carelogs:[],cur:null,settings:{},urls:{}};
+async function load(){ for(const k of ['pets','records','checkins','reminders','actions','carelogs']) S[k]=await DB.all(k); S.cur=await DB.meta('currentPet'); S.settings=(await DB.meta('settings'))||{};
   if(!S.pets.find(p=>p.id===S.cur)) S.cur=S.pets[0]?S.pets[0].id:null;
   for(const p of S.pets) await photoUrl(p.photoFileId); }
 async function save(store,obj){ const r=await DB.put(store,obj); const arr=S[store]; const i=arr.findIndex(x=>x.id===r.id); i>=0?arr[i]=r:arr.push(r); return r; }

@@ -58,18 +58,9 @@ const SPECIES={
   checkin:[m('weight','體重',{t:'num',unit:'g',step:1,err:1,baseline:true}),m('appetite','食慾',APPETITE),m('activity','活動力',ACTIVITY),m('stool','排便',{t:'cat',opts:['正常','異常','沒有']})],
   reminderExamples:['健康檢查','清潔環境']}
 };
-/* Red-flag guidance: general information, NOT a diagnosis. Each group cites its source. */
-const RED_FLAGS={
- general:{t:'所有寵物：以下情況請立刻聯絡獸醫或急診',src:[['AVMA 13 項需要立即就醫的狀況（Niles Animal Hospital 轉載）','https://nilesanimalhospital.com/2014/05/10/13-animal-emergencies-that-should-receive-immediate-veterinary-consultation-andor-care/'],['AVMA 寵物急救','https://www.avma.org/resources-tools/pet-owners/emergencycare/first-aid-tips-pet-owners']],
-  items:['大量出血，或出血超過 5 分鐘止不住','噎到、呼吸困難，或不停咳嗽、作嘔','鼻子、嘴巴、肛門出血，咳血或血尿','無法排尿或排便，或排尿、排便時明顯疼痛','眼睛受傷','懷疑或確定吃到有毒物質（例如防凍劑、木糖醇、巧克力、老鼠藥）','抽搐或走路搖晃不穩','骨折、嚴重跛行或腳無法移動','明顯疼痛或極度焦躁','中暑或熱衰竭','24 小時內嘔吐或腹瀉超過 2 次，或合併其他明顯不適','超過 24 小時不喝水','失去意識']},
- bird:{t:'鳥類',src:[['UC Davis 獸醫學院（特殊寵物急診）','https://www.vetmed.ucdavis.edu/news/new-emergency-service-established-companion-exotic-pets'],['VCA：鳥類生病徵兆','https://vcahospitals.com/know-your-pet/recognizing-the-signs-of-illness-in-pet-birds']],
-  items:['虛弱、非常沒精神','待在籠底不上棲木','站著時蓬毛、睡很多','平常會叫卻不叫','糞便變稀、有血','超過 24 小時沒吃東西','任何出血','長時間用力排便或生蛋','張嘴呼吸、尾巴隨呼吸上下擺動']},
- small:{t:'兔子、天竺鼠、倉鼠等小動物',src:[['UC Davis 獸醫學院（特殊寵物急診）','https://www.vetmed.ucdavis.edu/news/new-emergency-service-established-companion-exotic-pets'],['Vets Now：兔子腸胃停滯','https://www.vets-now.com/pet-care-advice/small-pets/gut-stasis-rabbits']],
-  items:['拉肚子或便便變少','沒有食慾','虛弱、沒精神','抱起來或碰觸時會痛','頭歪向一邊、打滾、翻轉','兔子不吃東西、弓著身體、肚子脹（可能是腸胃停滯，屬於緊急狀況）']},
- reptile:{t:'爬蟲、兩棲類',src:[['UC Davis 獸醫學院（特殊寵物急診）','https://www.vetmed.ucdavis.edu/news/new-emergency-service-established-companion-exotic-pets']],
-  items:['虛弱或沒有反應','張嘴呼吸','顫抖或抽動','長時間沒有食慾','動作異常慌亂','糞便帶血']},
- fish:{t:'魚類',src:[],items:['目前沒有整理到經查證的魚類警訊清單；有異常請洽可診治水族動物的獸醫。']}
-};
-const FLAG_GROUP={dog:[],cat:[],rabbit:['small'],guinea:['small'],hamster:['small'],bird:['bird'],reptile:['reptile'],fish:['fish'],other:[]};
-window.PC=window.PC||{}; Object.assign(window.PC,{SPECIES,RED_FLAGS,FLAG_GROUP});
+/* Default quick-care check-in items per species (user can add/remove per pet). Care actions only, no medical advice. */
+const CARE_DEFAULTS={dog:['🪥 刷牙','🛁 洗澡','💊 驅蟲','✂️ 剪指甲','🦮 散步'],cat:['🪥 刷牙','🪮 梳毛','💊 驅蟲','🧹 清貓砂'],
+ rabbit:['🌾 補牧草','🪮 梳毛','✂️ 剪指甲','🧹 清籠子'],guinea:['🌾 補牧草','🍊 維生素C','✂️ 剪指甲','🧹 換墊料'],hamster:['🥕 餵食','💧 換水','🧹 換墊料'],
+ bird:['🥣 餵食','💧 換水','🧹 清鳥籠','🛁 洗澡'],reptile:['🦗 餵食','💧 噴水','🧹 清飼養箱','💡 檢查燈具'],fish:['🍤 餵食','💧 換水','🧽 清濾材'],other:['🥣 餵食','💧 換水','🧹 清潔環境']};
+window.PC=window.PC||{}; Object.assign(window.PC,{SPECIES,CARE_DEFAULTS});
 })();

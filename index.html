@@ -16,17 +16,19 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<section class="view" id="v-home"></section>
 <section class="view" id="v-pets"></section>
 <section class="view" id="v-track"></section>
 <section class="view" id="v-care"></section>
 <section class="view" id="v-passport"></section>
 <section class="view" id="v-sos"></section>
 <nav class="tabs" id="tabs">
-  <button data-t="pets" class="on"><i>🐾</i>毛孩</button>
+  <button data-t="home" class="on"><i>🏠</i>首頁</button>
+  <button data-t="pets"><i>🐾</i>毛孩</button>
   <button data-t="track"><i>📈</i>紀錄</button>
   <button data-t="care"><i>⏰</i>提醒</button>
   <button data-t="passport"><i>🪪</i>護照</button>
-  <button data-t="sos"><i>🚑</i>緊急</button>
+  <button data-t="sos" class="sos-tab"><i>🚑</i>緊急</button>
 </nav>
 <div class="sheet" id="sheet"><div class="box" id="sheetbox"></div></div>
 <script src="vendor/qrcode.js"></script>
@@ -41,6 +43,7 @@
 <script src="js/passport.js"></script>
 <script src="js/summary.js"></script>
 <script src="js/sos.js"></script>
+<script src="js/home.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>
