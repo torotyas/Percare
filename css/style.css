@@ -163,3 +163,4 @@ footer b{color:#c0563b}
 details.raw{margin:10px 0;font-size:13px;color:var(--sub)}details.raw pre{white-space:pre-wrap;background:#fff;border-radius:10px;padding:8px;max-height:160px;overflow:auto}
 .print-only{display:none}
 @media print{body.printing>*:not(.sheet){display:none!important}body.printing .sheet{position:static;background:none}body.printing .sheet .box{position:static;transform:none;max-height:none;overflow:visible;max-width:none}body.printing .no-print,body.printing .grab,body.printing .shead{display:none!important}body.printing .print-only{display:block}}
+.care-btn.busy{opacity:.6}.hfilter{margin-bottom:8px}

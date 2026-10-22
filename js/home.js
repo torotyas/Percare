@@ -4,7 +4,7 @@
    {petId,itemId,name,at,note}. Undo = soft delete. No medical advice anywhere. */
 (function(){
 const PC=window.PC, {DB,S,$,esc,sp,ava,hdr,empty,openSheet,closeSheet,save,remove,petBar,bindPetBar,fmtDT,dstr,CARE_DEFAULTS}=PC;
-const APP_VERSION='0.3.0';
+const APP_VERSION='0.3.1';
 const DAILY=/刷牙|散步|餵食|噴水/;
 const D=864e5;
 const items=p=>p.careItems||(CARE_DEFAULTS[p.species]||CARE_DEFAULTS.other).map((n,i)=>({id:'d'+i,name:n,every:DAILY.test(n)?1:0,daily:DAILY.test(n)}));
@@ -26,21 +26,40 @@ function toast(html,undo){ let t=$('toast'); if(!t){ t=document.createElement('d
 /* matching reminder (same pet, title/type contains the care name, due within 7 days or overdue) is completed and advanced */
 async function matchReminder(p,it){ const nm=bare(it.name); if(!nm) return null;
   const r=S.reminders.filter(r=>r.petId===p.id&&PC.daysTo(r.date)<=7&&(PC.remTitle(r).includes(nm)||nm.includes(PC.remTitle(r)))).sort((a,b)=>a.date.localeCompare(b.date))[0];
-  if(!r) return null; await PC.completeReminder(r,'care_checkin'); return r; }
+  if(!r) return null; const snap={...r}; const a=await PC.completeReminder(r,'care_checkin'); return {snap,actionId:a&&a.id}; }
+/* delete one care log; if that tap auto-advanced a reminder, put the reminder back (only if nothing else changed it since) */
+async function delLog(id){ const l=S.carelogs.find(x=>x.id===id); if(!l) return; await remove('carelogs',id);
+  if(l.remSnap){ const cur=S.reminders.find(x=>x.id===l.remSnap.id);
+    if(!cur||cur.date===l.remNext){ await save('reminders',{...(cur||l.remSnap),date:l.remSnap.date,deletedAt:null,lastNotified:l.remSnap.lastNotified||null}); if(!cur){ const rr=await DB.get('reminders',l.remSnap.id); if(rr&&!S.reminders.find(x=>x.id===rr.id)) S.reminders.push(rr); } }
+    if(l.remAction){ await DB.softDelete('actions',l.remAction); S.actions=S.actions.filter(a=>a.id!==l.remAction); }
+    PC.syncNotifs&&PC.syncNotifs(); } }
 async function checkIn(pets,it,note){ const out=[];
   for(const p of pets){ const its=items(p).find(x=>bare(x.name)===bare(it.name))||it;
     const l=await save('carelogs',{petId:p.id,itemId:its.id,name:its.name,at:new Date().toISOString(),note:note||''});
-    const r=await matchReminder(p,its); out.push({l,r,p}); }
+    const m=await matchReminder(p,its); let r=null;
+    if(m){ r=m.snap; const nx=S.reminders.find(x=>x.id===m.snap.id); Object.assign(l,await save('carelogs',{...l,remSnap:m.snap,remNext:nx?nx.date:null,remAction:m.actionId})); }
+    out.push({l,r,p}); }
   return out; }
-async function tap(p,it,note){ const res=await checkIn([p],it,note); const {l,r}=res[0]; render();
-  toast(`✅ ${esc(p.name)}：${esc(it.name)} 已記錄${r?'・提醒已更新':''}`, async()=>{ await remove('carelogs',l.id); render(); }); }
+const lastTap={}; const GUARD=10000;
+async function tap(p,it,note,btn){ const k=p.id+'|'+it.id, now=Date.now();
+  if(lastTap[k]&&now-lastTap[k]<GUARD) return; lastTap[k]=now;          // ignore accidental double / repeat taps
+  if(btn){ btn.disabled=true; btn.classList.add('busy'); }
+  const before=stat(p,it).doneToday;
+  const res=await checkIn([p],it,note); const {l,r}=res[0]; render();
+  toast(before?`⚠️ ${esc(p.name)}：今天已記錄過，已再記一次`:`✅ ${esc(p.name)}：${esc(it.name)} 已記錄${r?'・提醒已更新':''}`, async()=>{ await delLog(l.id); delete lastTap[k]; render(); });
+  setTimeout(()=>{ const b=document.querySelector(`.care-btn[data-it="${it.id}"]`); if(b){ b.disabled=false; b.classList.remove('busy'); } },1500); }
 function noteSheet(p,it){ openSheet(`<div class="shead"><h2>${esc(it.name)}・加備註</h2><button class="x" data-close>✕</button></div>
   <form id="nf"><div class="f"><label>備註</label><textarea name="note" rows="3" maxlength="300" placeholder="例如：用了新牙膏"></textarea></div><button class="btn full">記錄</button></form>`,
-  box=>{ box.querySelector('#nf').onsubmit=async e=>{ e.preventDefault(); const n=e.target.note.value.trim(); closeSheet(); await tap(p,it,n); }; box.querySelector('textarea').focus(); }); }
-function historySheet(p){ const L=logs(p.id).slice(0,60);
+  box=>{ box.querySelector('#nf').onsubmit=async e=>{ e.preventDefault(); const n=e.target.note.value.trim(); closeSheet(); delete lastTap[p.id+'|'+it.id]; await tap(p,it,n); }; box.querySelector('textarea').focus(); }); }
+function historySheet(p,itemId){ const its=items(p); const it=itemId&&its.find(x=>x.id===itemId); const L=(it?S.carelogs.filter(l=>l.petId===p.id&&bare(l.name)===bare(it.name)).sort((a,b)=>b.at.localeCompare(a.at)):logs(p.id)).slice(0,80);
+  const todayN=it?L.filter(l=>dayKey(l.at)===PC.today()).length:0;
   openSheet(`<div class="shead"><h2>${esc(p.name)} 的照護紀錄</h2><button class="x" data-close>✕</button></div>
-  ${L.length?L.map(l=>`<div class="list-item"><div class="grow"><b>${esc(l.name)}</b><div class="meta">${fmtDT(l.at)}${l.createdBy&&l.createdBy!==DB.me?'・家人':''}</div>${l.note?`<div class="note">${esc(l.note)}</div>`:''}</div><button class="btn sm ghost" data-del="${l.id}">刪除</button></div>`).join(''):'<div class="meta">還沒有紀錄</div>'}`,
-  box=>box.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ if(!confirm('刪除這筆紀錄？')) return; await remove('carelogs',b.dataset.del); historySheet(p); render(); })); }
+  <div class="opt hfilter"><label><input type="radio" name="hf" value=""${it?'':' checked'}><span>全部</span></label>${its.map(x=>`<label><input type="radio" name="hf" value="${x.id}"${it&&x.id===it.id?' checked':''}><span>${esc(x.name)}</span></label>`).join('')}</div>
+  ${it?`<div class="row"><span class="meta grow">${esc(it.name)}：${stat(p,it).agoT}${stat(p,it).st?`・🔥 連續 ${stat(p,it).st} 天`:''}</span>${todayN?`<button class="btn sm ghost" id="hClr" style="color:#e5484d">清除今天的紀錄（${todayN}）</button>`:''}</div>`:''}
+  ${L.length?L.map(l=>`<div class="list-item"><div class="grow"><b>${esc(l.name)}</b><div class="meta">${fmtDT(l.at)}${l.createdBy&&l.createdBy!==DB.me?'・家人':''}</div>${l.note?`<div class="note">${esc(l.note)}</div>`:''}</div><button class="btn sm ghost" data-del="${l.id}" aria-label="刪除">🗑</button></div>`).join(''):'<div class="meta">還沒有紀錄</div>'}`,
+  box=>{ box.querySelectorAll('[name=hf]').forEach(r=>r.onchange=()=>historySheet(p,r.value||null));
+    box.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ if(!confirm('刪除這筆紀錄？')) return; await delLog(b.dataset.del); historySheet(p,itemId); render(); });
+    const c=box.querySelector('#hClr'); if(c) c.onclick=async()=>{ if(!confirm(`清除今天所有「${it.name}」紀錄？`)) return; for(const l of L.filter(l=>dayKey(l.at)===PC.today()).reverse()) await delLog(l.id); for(const k in lastTap) if(k.startsWith(p.id+'|')) delete lastTap[k]; historySheet(p,itemId); render(); }; }); }
 function itemsSheet(p){ const its=items(p);
   openSheet(`<div class="shead"><h2>管理打卡項目</h2><button class="x" data-close>✕</button></div>
   <div class="srcs" style="margin-bottom:8px">「間隔」是你自己想多久做一次，用來顯示「幾天後」；填 0 代表不提醒。勾「每日」會計算連續天數。</div>
@@ -57,7 +76,7 @@ function multiSheet(){ const names=[...new Set(S.pets.flatMap(p=>items(p).map(i=
    <div class="f"><label>項目</label><div class="opt">${names.map((n,i)=>`<label><input type="radio" name="it" value="${esc(n)}"${i?'':' checked'}><span>${esc(n)}</span></label>`).join('')}</div></div>
    <div class="f"><label>毛孩</label>${S.pets.map(p=>`<label class="check"><input type="checkbox" name="p" value="${p.id}" checked><span>${sp(p).i} ${esc(p.name)}</span></label>`).join('')}</div>
    <button class="btn full">一起記錄</button></form>`, box=>{ box.querySelector('#mf').onsubmit=async e=>{ e.preventDefault(); const fd=new FormData(e.target); const nm=fd.get('it'); const ps=fd.getAll('p').map(id=>PC.pet(id)).filter(Boolean); if(!ps.length) return;
-     const res=await checkIn(ps,{id:'x',name:nm}); closeSheet(); render(); toast(`✅ ${ps.length} 隻已記錄「${esc(nm)}」`, async()=>{ for(const x of res) await remove('carelogs',x.l.id); render(); }); }; }); }
+     const res=await checkIn(ps,{id:'x',name:nm}); closeSheet(); render(); toast(`✅ ${ps.length} 隻已記錄「${esc(nm)}」`, async()=>{ for(const x of res) await delLog(x.l.id); render(); }); }; }); }
 function settingsSheet(){
   openSheet(`<div class="shead"><h2>設定</h2><button class="x" data-close>✕</button></div>
    <button class="big-btn teal" id="bkExp">💾 <span>備份資料<small>下載一個 JSON 檔（不含照片與附件）</small></span></button>
@@ -91,10 +110,10 @@ async function render(){
     const start=()=>{ long=false; t=setTimeout(()=>{ long=true; noteSheet(p,it); },550); }, cancel=()=>clearTimeout(t);
     b.addEventListener('pointerdown',start); b.addEventListener('pointerup',cancel); b.addEventListener('pointerleave',cancel); b.addEventListener('pointercancel',cancel);
     b.addEventListener('contextmenu',e=>e.preventDefault());
-    b.onclick=()=>{ if(long){ long=false; return; } tap(p,it); }; });
+    b.onclick=()=>{ if(long){ long=false; return; } tap(p,it,'',b); }; });
   $('hHist').onclick=()=>historySheet(p); $('hItems').onclick=()=>itemsSheet(p); const m=$('hMulti'); if(m) m.onclick=multiSheet;
   $('hRem').onclick=()=>PC.go('care');
 }
 PC.VIEWS.home=render;
-Object.assign(PC,{careItems:items,careLogs:logs,careCheckIn:checkIn,APP_VERSION});
+Object.assign(PC,{careDelLog:delLog,careHistory:historySheet,careItems:items,careLogs:logs,careCheckIn:checkIn,APP_VERSION});
 })();
