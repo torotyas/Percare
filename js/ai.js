@@ -28,12 +28,32 @@ const stripPets=t=>S.pets.reduce((s,p)=>p.name?s.split(p.name).join(''):s,t);
 
 /* ======================= 1) OCR ======================= */
 const OCR_SRC='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-let ocrWorker=null;
+const OCR_CONSENT='pc.ocrModelConsent';
+let ocrWorker=null, ocrAllow=false;
 const loadScript=src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.async=true; s.onload=res; s.onerror=()=>rej(new Error('load')); document.head.appendChild(s); });
+function ocrConsented(){ if(ocrAllow) return true; try{ return localStorage.getItem(OCR_CONSENT)==='1'; }catch(e){ return false; } }
+/* App Store 4.2.3: ask before the first CDN fetch of Tesseract.js and chi_tra+eng (~15 MB). */
+function confirmOcrDownload(){
+  if(ocrConsented()) return Promise.resolve(true);
+  return new Promise(resolve=>{
+    let settled=false; const sheet=$('sheet');
+    const finish=v=>{ if(settled) return; settled=true; sheet.removeEventListener('click',onSheet); if(!v) closeSheet(); resolve(v); };
+    const onSheet=e=>{ if(e.target.closest&&e.target.closest('#ocrYes')) return;
+      if(e.target.id==='sheet'||(e.target.closest&&e.target.closest('[data-close],#ocrNo'))) finish(false); };
+    sheet.addEventListener('click',onSheet);
+    openSheet(`<div class="shead"><h2>下載辨識模型</h2><button class="x" data-close>✕</button></div>
+      <p class="note" style="font-size:15px;line-height:1.65;margin:4px 0 16px">第一次使用藥袋辨識需要下載約 15 MB 的辨識模型，建議在 Wi‑Fi 下下載。要現在下載嗎？</p>
+      <button type="button" class="btn full" id="ocrYes">下載</button>
+      <button type="button" class="btn ghost full" id="ocrNo" style="margin-top:8px">取消</button>`, box=>{
+      box.querySelector('#ocrYes').onclick=()=>{ ocrAllow=true; try{ localStorage.setItem(OCR_CONSENT,'1'); }catch(e){} finish(true); };
+      box.querySelector('#ocrNo').onclick=()=>finish(false); });
+  });
+}
 async function ocr(blob,onProg){
   if(A.engine) return A.engine(blob,onProg);                     // test hook / future engine (e.g. native ML Kit or cloud AI)
   if(!ocrWorker){
     if(navigator.onLine===false) throw Object.assign(new Error('offline'),{offline:true});
+    if(!ocrConsented()) throw Object.assign(new Error('cancel'),{cancel:true});
     try{ if(!window.Tesseract) await loadScript(OCR_SRC);
       ocrWorker=await window.Tesseract.createWorker('chi_tra+eng',1,{logger:m=>onProg&&m.status&&onProg(m)}); }
     catch(e){ ocrWorker=null; throw Object.assign(new Error('offline'),{offline:true}); } }
@@ -90,12 +110,14 @@ function ocrSheet(){ const p=PC.pet(); if(!p) return PC.go('pets');
     box.querySelector('#ocrCam').onchange=go; box.querySelector('#ocrPick').onchange=go;
     box.querySelector('#ocrManual').onclick=()=>ocrForm({kind:'medication'},null); }); }
 async function runOcr(file){
-  openSheet(`<div class="shead"><h2>辨識中…</h2><button class="x" data-close>✕</button></div><div class="ai-prog"><div class="bar"><i id="ocrBar"></i></div><div class="meta" id="ocrMsg">準備辨識模組…（第一次使用需下載約 15 MB，之後會快很多）</div></div>`);
+  const downloading=!A.engine&&!ocrWorker;
+  if(downloading&&navigator.onLine!==false&&!ocrConsented()){ const ok=await confirmOcrDownload(); if(!ok) return; }
+  openSheet(`<div class="shead"><h2>${downloading?'下載辨識模型':'辨識中…'}</h2><button class="x" data-close>✕</button></div><div class="ai-prog"><div class="bar"><i id="ocrBar" class="${downloading?'ind':''}"></i></div><div class="meta" id="ocrMsg">${downloading?'下載辨識模組中…':'辨識文字中…'}</div></div>`);
   let blob=file; try{ blob=await PC.resizeImage(file,1800,0.9); }catch(e){}
   const msg=s=>{ const m=$('ocrMsg'); if(m) m.textContent=s; };
-  try{ const txt=await ocr(blob,m=>{ const b=$('ocrBar'); if(b&&m.progress!=null) b.style.width=Math.round(m.progress*100)+'%'; msg(m.status==='recognizing text'?'辨識文字中…':'下載辨識模組中…'); });
+  try{ const txt=await ocr(blob,m=>{ const b=$('ocrBar'); if(b&&m.progress!=null){ b.classList.remove('ind'); b.style.width=Math.max(3,Math.round(m.progress*100))+'%'; } msg(m.status==='recognizing text'?`辨識文字中… ${Math.round((m.progress||0)*100)}%`:`下載辨識模組中… ${Math.round((m.progress||0)*100)}%`); });
     const r=parseOcr(txt); ocrForm(r,file,txt.trim()?'':'沒有辨識到文字，請手動填寫或重拍。'); }
-  catch(e){ ocrForm({kind:'medication'},file,e.offline?'目前沒有網路，無法下載辨識模組。照片已保留，請先手動填寫，連上網路後再試拍照辨識。':'辨識失敗：'+(e.message||e)+'。請手動填寫。'); } }
+  catch(e){ if(e.cancel){ closeSheet(); return; } ocrForm({kind:'medication'},file,e.offline?'目前沒有網路，無法下載辨識模組。照片已保留，請先手動填寫，連上網路後再試拍照辨識。':'辨識失敗：'+(e.message||e)+'。請手動填寫。'); } }
 function ocrForm(r,file,warn){ const p=PC.pet(); let kind=r.kind||'medication';
   const draw=()=>{ const k=kind==='receipt'?'visit':kind, K=PC.KINDS[k];
     const val=key=>key==='date'?(r.date||today()):key==='title'&&kind==='receipt'&&!r.title?'就醫收據':key==='followUp'?r.nextDate:key==='nextDate'?r.nextDate:key==='prescribedBy'?r.clinic:key==='notes'?[r.amount&&kind!=='receipt'&&k!=='visit'?'金額 NT$'+r.amount:''].filter(Boolean).join(''):r[key];

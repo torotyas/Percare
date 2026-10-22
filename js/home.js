@@ -4,7 +4,7 @@
    {petId,itemId,name,at,note}. Undo = soft delete. No medical advice anywhere. */
 (function(){
 const PC=window.PC, {DB,S,$,esc,sp,ava,hdr,empty,openSheet,closeSheet,save,remove,petBar,bindPetBar,fmtDT,dstr,CARE_DEFAULTS}=PC;
-const APP_VERSION='0.3.3';
+const APP_VERSION='0.3.4';
 const DAILY=/刷牙|散步|餵食|噴水/;
 const D=864e5;
 const bare=s=>String(s||'').replace(/^[^\p{L}\p{N}]+/u,'').trim();
