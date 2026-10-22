@@ -1,4 +1,18 @@
 <!-- © 2026 凱波工作室 Kaibo Studio -->
+/* iOS Safari / WKWebView zoom in on a quick second tap or a pinch. Block those
+   gestures, but never cancel touchend on a control: preventDefault there swallows
+   the click. Repeat care check-ins stay on the 10s debounce in home.js. */
+(function(){
+  let last=0;
+  const clickable=el=>{ const n=el&&el.nodeType===3?el.parentElement:el; return !!(n&&n.closest&&n.closest('a,button,input,select,textarea,label')); };
+  document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+  document.addEventListener('touchend',e=>{
+    if(e.touches.length||e.changedTouches.length!==1){ last=0; return; }
+    const now=Date.now();
+    if(now-last<=300&&!clickable(e.target)) e.preventDefault();
+    last=now;
+  },{passive:false});
+})();
 (async function(){
 const PC=window.PC;
 document.getElementById('tabs').onclick=e=>{ const b=e.target.closest('[data-t]'); if(b) PC.go(b.dataset.t); };
