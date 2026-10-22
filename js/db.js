@@ -37,7 +37,7 @@ const DB={
   async delFile(id){ await req(tx('files','readwrite').delete(id)); },
   async usage(){ if(navigator.storage&&navigator.storage.estimate){ const e=await navigator.storage.estimate(); return e; } return null; },
   /* restore a backup made by exportAll: upsert every row by id (newer updatedAt wins), never deletes local data */
-  async importAll(data){ if(!data||data.app!=='petcare') throw new Error('不是毛孩護照的備份檔'); let n=0;
+  async importAll(data){ if(!data||data.app!=='petcare') throw new Error('不是寵物護照的備份檔'); let n=0;
     for(const s of STORES.filter(s=>s!=='files'&&Array.isArray(data[s]))) for(const row of data[s]){ const key=s==='meta'?row.k:row.id; if(key==null) continue;
       if(s!=='meta'){ const cur=await req(tx(s).get(key)); if(cur&&cur.updatedAt&&row.updatedAt&&cur.updatedAt>row.updatedAt) continue; }
       if(s==='meta'&&row.k==='deviceUser') continue; await req(tx(s,'readwrite').put(row)); n++; }

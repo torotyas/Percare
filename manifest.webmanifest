@@ -1,6 +1,6 @@
 {
-  "name": "毛孩健康護照",
-  "short_name": "毛孩護照",
+  "name": "寵物健康護照",
+  "short_name": "寵物護照",
   "description": "全物種寵物健康紀錄、照護提醒、就醫摘要與項圈 QR 護照",
   "lang": "zh-Hant-TW",
   "start_url": "./index.html#home",

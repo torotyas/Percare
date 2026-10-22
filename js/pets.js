@@ -22,7 +22,7 @@ function renderList(){
   const v=$('v-pets');
   if(detailId&&S.pets.find(p=>p.id===detailId)) return renderDetail(detailId);
   detailId=null;
-  v.innerHTML=hdr('🐾','毛孩健康護照','每隻毛孩一本健康檔案','<button class="btn sm" id="addPet">＋ 新增</button>')+'<div class="pad" id="plist"></div>';
+  v.innerHTML=hdr('🐾','寵物健康護照','每隻毛孩一本健康檔案','<button class="btn sm" id="addPet">＋ 新增</button>')+'<div class="pad" id="plist"></div>';
   $('addPet').onclick=()=>petForm();
   if(!S.pets.length){ $('plist').innerHTML=empty('🐾','還沒有毛孩檔案。<br>狗、貓、兔、鳥、倉鼠、天竺鼠、爬蟲、魚都可以建立，<br>先幫你家的寶貝（例如波比）建一本護照吧！','<br><button class="btn" id="emptyAdd">＋ 新增毛孩</button>'); $('emptyAdd').onclick=()=>petForm(); return; }
   $('plist').innerHTML=S.pets.map(p=>{ const al=recs(p.id,'allergy').length, meds=recs(p.id,'medication').filter(medActive).length;

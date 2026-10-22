@@ -4,17 +4,23 @@
    {petId,itemId,name,at,note}. Undo = soft delete. No medical advice anywhere. */
 (function(){
 const PC=window.PC, {DB,S,$,esc,sp,ava,hdr,empty,openSheet,closeSheet,save,remove,petBar,bindPetBar,fmtDT,dstr,CARE_DEFAULTS}=PC;
-const APP_VERSION='0.3.1';
+const APP_VERSION='0.3.2';
 const DAILY=/刷牙|散步|餵食|噴水/;
 const D=864e5;
-const items=p=>p.careItems||(CARE_DEFAULTS[p.species]||CARE_DEFAULTS.other).map((n,i)=>({id:'d'+i,name:n,every:DAILY.test(n)?1:0,daily:DAILY.test(n)}));
+const bare=s=>String(s||'').replace(/^[^\p{L}\p{N}]+/u,'').trim();
+/* Id is the care type (bare name), not the list index. Index ids (d0, d1, …) are shared by
+   different types — 餵食 is d0 for fish, 刷牙 is d0 for dogs — so a log stored with that id
+   showed up on the wrong card. */
+const items=p=>p.careItems||(CARE_DEFAULTS[p.species]||CARE_DEFAULTS.other).map((n,i)=>{ const b=bare(n); return {id:'c:'+(b||String(i)),name:n,every:DAILY.test(n)?1:0,daily:DAILY.test(n)}; });
 async function ensureItems(p){ if(!p.careItems){ const r=await save('pets',{...p,careItems:items(p)}); return r; } return p; }
 const logs=(petId,itemId)=>S.carelogs.filter(l=>l.petId===petId&&(!itemId||l.itemId===itemId)).sort((a,b)=>b.at.localeCompare(a.at));
 const dayKey=iso=>dstr(new Date(iso));
 const daysSince=iso=>Math.round((new Date(PC.today()+'T00:00:00')-new Date(dayKey(iso)+'T00:00:00'))/D);
 function streak(L){ const days=new Set(L.map(l=>dayKey(l.at))); let d=new Date(); if(!days.has(dstr(d))) d.setDate(d.getDate()-1); let n=0; while(days.has(dstr(d))){ n++; d.setDate(d.getDate()-1); } return n; }
-const bare=s=>s.replace(/^[^\p{L}\p{N}]+/u,'').trim();
-function stat(p,it){ const L=logs(p.id,it.id), last=L[0];
+/* A card owns a log when the care name matches. itemId alone is not enough: legacy rows
+   reused another type's positional id (d0) while keeping the name of the type that was logged. */
+function typeLogs(p,it){ const nm=bare(it.name); return S.carelogs.filter(l=>{ if(l.petId!==p.id) return false; const ln=bare(l.name); if(nm&&ln) return ln===nm; return !!(it.id&&l.itemId===it.id); }).sort((a,b)=>b.at.localeCompare(a.at)); }
+function stat(p,it){ const L=typeLogs(p,it), last=L[0];
   const ago=last?daysSince(last.at):null;
   const agoT=last?(ago===0?'今天 '+fmtDT(last.at).split(' ')[1]:ago+' 天前'):'還沒記錄';
   let next=''; if(it.every&&last){ const n=it.every-ago; next=n>0?`${n} 天後`:n===0?'今天該做':`已過 ${-n} 天`; }
@@ -33,8 +39,11 @@ async function delLog(id){ const l=S.carelogs.find(x=>x.id===id); if(!l) return;
     if(!cur||cur.date===l.remNext){ await save('reminders',{...(cur||l.remSnap),date:l.remSnap.date,deletedAt:null,lastNotified:l.remSnap.lastNotified||null}); if(!cur){ const rr=await DB.get('reminders',l.remSnap.id); if(rr&&!S.reminders.find(x=>x.id===rr.id)) S.reminders.push(rr); } }
     if(l.remAction){ await DB.softDelete('actions',l.remAction); S.actions=S.actions.filter(a=>a.id!==l.remAction); }
     PC.syncNotifs&&PC.syncNotifs(); } }
+function resolveItem(p,it){ const list=items(p), nm=bare(it.name); const own=list.find(x=>bare(x.name)===nm);
+  if(own) return own; const taken=it.id&&list.some(x=>x.id===it.id);
+  return {id:(!it.id||taken)?DB.uuid():it.id, name:it.name, every:DAILY.test(it.name||'')?1:0, daily:DAILY.test(it.name||'')}; }
 async function checkIn(pets,it,note){ const out=[];
-  for(const p of pets){ const its=items(p).find(x=>bare(x.name)===bare(it.name))||it;
+  for(const p of pets){ const its=resolveItem(p,it);
     const l=await save('carelogs',{petId:p.id,itemId:its.id,name:its.name,at:new Date().toISOString(),note:note||''});
     const m=await matchReminder(p,its); let r=null;
     if(m){ r=m.snap; const nx=S.reminders.find(x=>x.id===m.snap.id); Object.assign(l,await save('carelogs',{...l,remSnap:m.snap,remNext:nx?nx.date:null,remAction:m.actionId})); }
@@ -82,16 +91,16 @@ function settingsSheet(){
    <button class="big-btn teal" id="bkExp">💾 <span>備份資料<small>下載一個 JSON 檔（不含照片與附件）</small></span></button>
    <label class="big-btn teal" style="cursor:pointer">📥 <span>從備份還原<small>合併匯入，不會刪除目前資料</small></span><input type="file" id="bkImp" accept="application/json,.json" hidden></label>
    <a class="big-btn orange" id="fb" href="#">✉️ <span>意見回饋<small>寄信給開發者</small></span></a>
-   <div class="srcs" style="text-align:center">毛孩健康護照 v${APP_VERSION}・本 app 不提供醫療建議，有疑慮請聯絡獸醫。</div>
+   <div class="srcs" style="text-align:center">寵物健康護照 v${APP_VERSION}・本 app 不提供醫療建議，有疑慮請聯絡獸醫。</div>
    <div class="srcs" style="text-align:center">© 2026 凱波工作室 Kaibo Studio</div>`, box=>{
-    $('bkExp').onclick=async()=>{ const d=await DB.exportAll(); window.Platform.Share.download(new Blob([JSON.stringify(d)],{type:'application/json'}),`毛孩護照備份-${PC.today()}.json`); };
+    $('bkExp').onclick=async()=>{ const d=await DB.exportAll(); window.Platform.Share.download(new Blob([JSON.stringify(d)],{type:'application/json'}),`寵物護照備份-${PC.today()}.json`); };
     $('bkImp').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; try{ const n=await DB.importAll(JSON.parse(await file.text())); await PC.load(); closeSheet(); render(); toast(`已還原 ${n} 筆資料`); }catch(err){ alert('還原失敗：'+err.message); } };
     $('fb').href='mailto:kai.pobi666@gmail.com?subject='+encodeURIComponent('PetCare 意見回饋')+'&body='+encodeURIComponent(`\n\n\n---\nApp 版本：${APP_VERSION}\n裝置：${navigator.userAgent}`); }); }
 const inApp=/Line\/|FBAN|FBAV|FB_IAB|Instagram/i.test(navigator.userAgent);
 async function render(){
   const v=$('v-home'); let p=PC.pet();
   const banner=inApp&&!sessionStorage.getItem('pcIab')?`<div class="info iab">📱 你正在 LINE／FB／IG 內建瀏覽器中，資料可能無法保存。請點右上角「⋯」選「用 Safari／Chrome 開啟」。<button class="btn sm ghost" id="iabX">知道了</button></div>`:'';
-  v.innerHTML=hdr('🐾',p?p.name:'毛孩健康護照',p?'今天的照護':'','<button class="btn sm ghost" id="setBtn" aria-label="設定">⚙️</button>')+petBar()+`<div class="pad">${banner}<div id="hm"></div>
+  v.innerHTML=hdr('🐾',p?p.name:'寵物健康護照',p?'今天的照護':'','<button class="btn sm ghost" id="setBtn" aria-label="設定">⚙️</button>')+petBar()+`<div class="pad">${banner}<div id="hm"></div>
    <button class="sos-big" id="sosBig">🚑 緊急求助<small>撥打醫院・找附近 24 小時急診</small></button></div>`;
   bindPetBar(v,render); $('setBtn').onclick=settingsSheet; $('sosBig').onclick=()=>PC.go('sos');
   const ix=$('iabX'); if(ix) ix.onclick=()=>{ sessionStorage.setItem('pcIab','1'); render(); };

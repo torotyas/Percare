@@ -34,7 +34,7 @@ async function ecard(p){ const st=S.settings, pass=p.passport||{}, W=1080, H=680
   const row=(k,v)=>{ if(!v) return; x.fillStyle='#e5484d'; x.font=`700 34px ${F}`; x.fillText(k,X,y); x.fillStyle='#2d3b38'; x.font=`600 36px ${F}`; x.fillText(String(v).slice(0,24),X+170,y); y+=62; };
   row('晶片',p.chip); row('主人',[pass.ownerName,pass.phone].filter(Boolean).join(' ')||'（請到護照頁填電話）'); row('醫院',[st.vetName,st.vetPhone].filter(Boolean).join(' ')); row('急診',[st.erName,st.erPhone].filter(Boolean).join(' '));
   const al=PC.recs(p.id,'allergy').map(r=>r.title); if(al.length){ y=Math.max(y,440); row('過敏',al.join('、')); }
-  x.fillStyle='#8c9a97'; x.font=`400 24px ${F}`; x.fillText('毛孩健康護照・飼主自行填寫',48,H-30);
+  x.fillStyle='#8c9a97'; x.font=`400 24px ${F}`; x.fillText('寵物健康護照・飼主自行填寫',48,H-30);
   return c; }
 async function showEcard(p){ const c=await ecard(p); const url=c.toDataURL('image/png');
   PC.openSheet(`<div class="shead"><h2>緊急資料卡</h2><button class="x" data-close>✕</button></div><img class="ecard" src="${url}" alt="緊急資料卡">
