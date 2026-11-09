@@ -62,7 +62,7 @@ function remForm(id){
 function exportIcs(r){
   const d=r.date.replace(/-/g,''), nd=addInterval(r.date,1,'day').replace(/-/g,''); const freq={day:'DAILY',week:'WEEKLY',month:'MONTHLY',year:'YEARLY'}[r.unit];
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,''); const e=s=>s.replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n');
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//PetCare//v1//ZH-TW','BEGIN:VEVENT',`UID:${r.id}@petcare.local`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${d}`,`DTEND;VALUE=DATE:${nd}`,`SUMMARY:${e('🐾 '+remLabel(r))}`,...(r.every?[`RRULE:FREQ=${freq};INTERVAL=${r.every}`]:[]),'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${e(remLabel(r))}`,'TRIGGER:PT9H','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//PetHealthPassport//v1//ZH-TW','BEGIN:VEVENT',`UID:${r.id}@petcare.local`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${d}`,`DTEND;VALUE=DATE:${nd}`,`SUMMARY:${e('🐾 '+remLabel(r))}`,...(r.every?[`RRULE:FREQ=${freq};INTERVAL=${r.every}`]:[]),'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${e(remLabel(r))}`,'TRIGGER:PT9H','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
   Share.download(new Blob([ics],{type:'text/calendar'}),`reminder-${r.date}.ics`); }
 async function checkDue(){ if(Notifier.isNative()) return;
   for(const r of S.reminders){ if(daysTo(r.date)<=0&&r.lastNotified!==r.date){ const ok=await Notifier.show('🐾 照護提醒',remLabel(r)); if(ok){ r.lastNotified=r.date; await DB.put('reminders',r); } } } }

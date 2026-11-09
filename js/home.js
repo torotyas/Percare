@@ -4,7 +4,7 @@
    {petId,itemId,name,at,note}. Undo = soft delete. No medical advice anywhere. */
 (function(){
 const PC=window.PC, {DB,S,$,esc,sp,ava,hdr,empty,openSheet,closeSheet,save,remove,petBar,bindPetBar,fmtDT,dstr,CARE_DEFAULTS}=PC;
-const APP_VERSION='0.3.4';
+const APP_VERSION='1.0.1';
 const DAILY=/刷牙|散步|餵食|噴水/;
 const D=864e5;
 const bare=s=>String(s||'').replace(/^[^\p{L}\p{N}]+/u,'').trim();
@@ -93,9 +93,9 @@ function settingsSheet(){
    <a class="big-btn orange" id="fb" href="#">✉️ <span>意見回饋<small>寄信給開發者</small></span></a>
    <div class="srcs" style="text-align:center">寵物健康護照 v${APP_VERSION}・本 app 不提供醫療建議，有疑慮請聯絡獸醫。</div>
    <div class="srcs" style="text-align:center">© 2026 凱波工作室 Kaibo Studio</div>`, box=>{
-    $('bkExp').onclick=async()=>{ const d=await DB.exportAll(); window.Platform.Share.download(new Blob([JSON.stringify(d)],{type:'application/json'}),`寵物護照備份-${PC.today()}.json`); };
+    $('bkExp').onclick=async()=>{ const d=await DB.exportAll(); window.Platform.Share.download(new Blob([JSON.stringify(d)],{type:'application/json'}),`寵物健康護照備份-${PC.today()}.json`); };
     $('bkImp').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; try{ const n=await DB.importAll(JSON.parse(await file.text())); await PC.load(); closeSheet(); render(); toast(`已還原 ${n} 筆資料`); }catch(err){ alert('還原失敗：'+err.message); } };
-    $('fb').href='mailto:kai.pobi666@gmail.com?subject='+encodeURIComponent('PetCare 意見回饋')+'&body='+encodeURIComponent(`\n\n\n---\nApp 版本：${APP_VERSION}\n裝置：${navigator.userAgent}`); }); }
+    $('fb').href='mailto:kai.pobi666@gmail.com?subject='+encodeURIComponent('寵物健康護照 意見回饋')+'&body='+encodeURIComponent(`\n\n\n---\nApp 版本：${APP_VERSION}\n裝置：${navigator.userAgent}`); }); }
 const inApp=/Line\/|FBAN|FBAV|FB_IAB|Instagram/i.test(navigator.userAgent);
 async function render(){
   const v=$('v-home'); let p=PC.pet();
